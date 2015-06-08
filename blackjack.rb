@@ -2,8 +2,6 @@
 
 # YOUR CODE HERE
 
-require 'pry'
-
 class PlayingCard
 
   attr_reader :rank, :suit
@@ -36,9 +34,9 @@ class Deck
   end
 end
 
-class Hand
+class Hand < Array
 
-  attr_reader :deck
+  attr_reader :deck, :hand_contents
 
   def initialize(deck)
     @hand_contents = []
@@ -70,41 +68,62 @@ class Game
 
   attr_accessor :deck, :player_hand, :dealer_hand, :win, :lose
 
-  def initialize
-    @deck = Deck.new
-    @player_hand = Hand.new(@deck)
-    @dealer_hand = Hand.new(@deck)
+  def initialize(deck, player_hand, dealer_hand)
+    @deck = deck
+    @player_hand = player_hand
+    @dealer_hand = dealer_hand
     @win = false
     @lose = false
   end
 
   def win?
-    @win = true
     puts "You win. Your hand had a score of #{@player_hand.score} while the dealer had a score of #{@dealer_hand.score}"
+    @win = true
   end
 
   def lose?
-    @lose = true
+    puts "You drew a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
+    puts "Your hand has a score of #{@player_hand.score}."
     puts "You lose. Your hand had a score of #{@player_hand.score} while the dealer had a score of #{@dealer_hand.score}"
+    @lose = true
+  end
+
+  def player_talk
+    puts "Dealer says hit or stand. Respond."
+    choice = gets.chomp
+    player_hit(choice)
   end
 
   def player_hit(choice)
     if choice == "hit"
-      @player_hand << @deck.draw!
-    elsif @player_hand.score > 21
-      lose? == true
+      @player_hand.hand_contents << @deck.draw!
+      @player_hand.score
+      greater_than_twenty_one_check
+      puts "You drew a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
+      puts "Your hand has a score of #{@player_hand.score}."
+    elsif choice == "stand"
+      dealer_hit
+    else
+      player_hit
     end
-    puts "Your hand has a score of #{@player_hand.score}."
+  end
+
+  def greater_than_twenty_one_check
+    if @player_hand.score > 21
+      lose?
+    end
+    if @dealer_hand.score > 21
+      win?
+    end
   end
 
   def dealer_hit
-    until @dealer_hand.score >= 17
-      @dealer_hand << @deck.draw!
+    until @dealer_hand.score > 18
+      @dealer_hand.hand_contents << @deck.draw!
+      @dealer_hand.score
+      puts "The dealer's hand has a score of #{@dealer_hand.score}."
     end
-    if @dealer_hand.score > 21
-      win? == true
-    end
-    puts "The dealer's hand has a score of #{@dealer_hand.score}."
+    greater_than_twenty_one_check
   end
 
   def game_winner
@@ -118,20 +137,11 @@ class Game
   end
 end
 
-game = Game.new
-
-binding.pry
-
-puts "Let's play blackjack!!!"
-puts "You have a #{@player_hand.hand_contents.first.rank}#{@player_hand.hand_contents.first.suit} and a #{@player_hand.hand_contents.last.rank}#{@player_hand.last.suit}"
-puts "Dealer says hit or stand. Respond."
-player_choice = gets.chomp
-game.player_hit(player_choice)
-puts "You drew a #{@player_hand.hand_contents.last.rank}#{@player_hand.hand_contents.last.suit}."
-puts "Are you done hitting?"
-player_choice = gets.chomp
-game.player_hit(player_choice)
-puts "You drew a #{@player_hand.hand_contents.last.rank}#{@player_hand.hand_contents.last.suit}."
-puts "That's probably enough times. My turn."
-game.dealer_hit
-game.game_winner
+until @win == true || @lose == true
+  deck = Deck.new; player_hand = Hand.new(deck); dealer_hand = Hand.new(deck)
+  game = Game.new(deck, player_hand, dealer_hand)
+  puts "Let's play blackjack!!!"
+  puts "Your opening hand is a #{player_hand.hand_contents.first.rank}#{player_hand.hand_contents.first.suit} and a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
+  game.player_talk
+  game.game_winner
+end
