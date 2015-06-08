@@ -82,8 +82,6 @@ class Game
   end
 
   def lose?
-    puts "You drew a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
-    puts "Your hand has a score of #{@player_hand.score}."
     puts "You lose. Your hand had a score of #{@player_hand.score} while the dealer had a score of #{@dealer_hand.score}"
     @lose = true
   end
@@ -110,9 +108,11 @@ class Game
 
   def greater_than_twenty_one_check
     if @player_hand.score > 21
+      puts "You busted!"
       lose?
     end
     if @dealer_hand.score > 21
+      puts "Dealer busted. You win!"
       win?
     end
   end
