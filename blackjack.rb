@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-# YOUR CODE HERE
-
 class PlayingCard
 
   attr_reader :rank, :suit
@@ -15,7 +13,7 @@ end
 
 SUITS = ['♦', '♣', '♠', '♥']
 VALUES = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-SCORES = [ 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 1 ]
+SCORES = [ 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10, 11 ]
 
 class Deck
 
@@ -37,111 +35,116 @@ end
 class Hand < Array
 
   attr_reader :deck, :hand_contents
+  attr_accessor :scoring_hash
 
   def initialize(deck)
     @hand_contents = []
     2.times do
       @hand_contents << deck.draw!
     end
+    scoring_hash_initialize
   end
 
-  def create_scoring_hash
+  def scoring_hash_initialize
     @scoring_hash = Hash[VALUES.zip(SCORES.map {|values| values})]
-    # we need some way to change A value to 11
   end
 
   def score
-    create_scoring_hash
     sum = 0
     @scoring_hash.each do |value, score|
-      @hand_contents.each do |card|
+      hand_contents.each do |card|
         if value == card.rank
           sum += score
+        end
+        if card.rank == 'A' && sum > 21
+          sum -= 10
         end
       end
     end
     sum
   end
+
 end
 
 class Game
 
-  attr_accessor :deck, :player_hand, :dealer_hand, :win, :lose
+  attr_accessor :deck, :player_hand, :dealer_hand, :ace_answer
 
   def initialize(deck, player_hand, dealer_hand)
     @deck = deck
     @player_hand = player_hand
     @dealer_hand = dealer_hand
-    @win = false
-    @lose = false
   end
 
-  def win?
-    puts "You win. Your hand had a score of #{@player_hand.score} while the dealer had a score of #{@dealer_hand.score}"
-    @win = true
+  def win
+    abort "You win. Your hand had a score of #{player_hand.score} while the dealer had a score of #{dealer_hand.score}."
   end
 
-  def lose?
-    puts "You lose. Your hand had a score of #{@player_hand.score} while the dealer had a score of #{@dealer_hand.score}"
-    @lose = true
+  def lose
+    puts "The dealer drew:"
+    dealer_hand.hand_contents.each do |card|
+      puts "#{card.rank}#{card.suit}"
+    end
+    abort "You lose. Your hand had a score of #{player_hand.score} while the dealer had a score of #{dealer_hand.score}."
   end
 
-  def player_talk
+  def player_question
     puts "Dealer says hit or stand. Respond."
     choice = gets.chomp
     player_hit(choice)
   end
 
+  def draw
+    player_hand.hand_contents << @deck.draw!
+    puts "You drew a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
+  end
+
   def player_hit(choice)
     if choice == "hit"
-      @player_hand.hand_contents << @deck.draw!
-      @player_hand.score
+      draw
       greater_than_twenty_one_check
-      puts "You drew a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
-      puts "Your hand has a score of #{@player_hand.score}."
+      puts "Your hand has a score of #{player_hand.score}."
+      player_question
     elsif choice == "stand"
       dealer_hit
     else
-      player_hit
-    end
-  end
-
-  def greater_than_twenty_one_check
-    if @player_hand.score > 21
-      puts "You busted!"
-      lose?
-    end
-    if @dealer_hand.score > 21
-      puts "Dealer busted. You win!"
-      win?
+      player_question
     end
   end
 
   def dealer_hit
-    until @dealer_hand.score > 18
-      @dealer_hand.hand_contents << @deck.draw!
-      @dealer_hand.score
-      puts "The dealer's hand has a score of #{@dealer_hand.score}."
+    until dealer_hand.score > 18
+      dealer_hand.hand_contents << @deck.draw!
+      dealer_hit
     end
     greater_than_twenty_one_check
   end
 
-  def game_winner
-    if @dealer_hand.score > @player_hand.score
-      lose?
-    elsif @dealer_hand.score == @player_hand.score
-      puts "You tied!"
+  def greater_than_twenty_one_check
+    if player_hand.score > 21
+      puts "You busted!"
+      lose
+    end
+    if dealer_hand.score > 21
+      puts "Dealer busted."
+      win
+    end
+  end
+
+  def game_over
+    if dealer_hand.score > player_hand.score
+      lose
+    elsif dealer_hand.score == player_hand.score
+      abort "You tied! Both players had a score of #{dealer_hand.score}."
     else
-      win?
+      win
     end
   end
 end
 
-until @win == true || @lose == true
-  deck = Deck.new; player_hand = Hand.new(deck); dealer_hand = Hand.new(deck)
-  game = Game.new(deck, player_hand, dealer_hand)
-  puts "Let's play blackjack!!!"
-  puts "Your opening hand is a #{player_hand.hand_contents.first.rank}#{player_hand.hand_contents.first.suit} and a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
-  game.player_talk
-  game.game_winner
-end
+deck = Deck.new; player_hand = Hand.new(deck); dealer_hand = Hand.new(deck)
+game = Game.new(deck, player_hand, dealer_hand)
+puts "Let's play blackjack!"
+puts "Your opening hand is a #{player_hand.hand_contents.first.rank}#{player_hand.hand_contents.first.suit} and a #{player_hand.hand_contents.last.rank}#{player_hand.hand_contents.last.suit}."
+game.player_question
+game.game_over
